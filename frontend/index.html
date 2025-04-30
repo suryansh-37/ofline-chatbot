@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chat</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+   :root {
+    --primary-color: #3f51b5;
+    --accent-color: #e91e63;
+    --text-color-primary: #212121;
+    --text-color-secondary: #757575;
+    --background-color: #f5f5f5;
+    --input-background: #fff;
+    --input-border: #bdbdbd;
+    --button-background: var(--primary-color);
+    --button-text-color: #fff;
+    --response-background: #fff;
+    --response-border: #e0e0e0;
+    --code-background: #f0f0f0;
+    --code-text-color: #212121;
+    --sidebar-background: #f0f0f0;
+    --sidebar-text-color: var(--text-color-primary);
+    --sidebar-icon-color: var(--text-color-secondary);
+    --sidebar-active-background: #e0e0e0;
+   }
+
+   body.dark-theme {
+    --primary-color: #5c6bc0;
+    --accent-color: #f48fb1;
+    --text-color-primary: #e0e0e0;
+    --text-color-secondary: #b0bec5;
+    --background-color: #303030;
+    --input-background: #424242;
+    --input-border: #616161;
+    --button-background: var(--primary-color);
+    --button-text-color: #fff;
+    --response-background: #424242;
+    --response-border: #616161;
+    --code-background: #484848;
+    --code-text-color: #e0e0e0;
+    --sidebar-background: #424242;
+    --sidebar-text-color: var(--text-color-primary);
+    --sidebar-icon-color: var(--text-color-secondary);
+    --sidebar-active-background: #5c5c5c;
+   }
+
+   html, body {
+    height: 100%;
+    overflow: hidden;
+   }
+
+   body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    background-color: var(--background-color);
+    color: var(--text-color-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    box-sizing: border-box;
+    position: relative;
+   }
+
+   #sidebar {
+    width: 200px;
+    background-color: var(--sidebar-background);
+    color: var(--sidebar-text-color);
+    border-right: 1px solid var(--response-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-200px);
+    z-index: 10;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+   }
+
+   #sidebar.open {
+    transform: translateX(0);
+   }
+
+   .sidebar-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    font-size: 1.3rem;
+    color: var(--sidebar-icon-color);
+    z-index: 11;
+    transition: color 0.3s ease, transform 0.2s ease-in-out;
+    outline: none;
+   }
+
+   .sidebar-toggle:hover {
+    color: var(--primary-color);
+    transform: scale(1.1);
+   }
+
+   .sidebar-toggle.open i::before {
+    content: "\f00d";
+   }
+
+   #sidebar .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: var(--sidebar-text-color);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+    cursor: pointer;
+   }
+
+   #sidebar .sidebar-item:hover {
+    background-color: var(--sidebar-active-background);
+    color: var(--primary-color);
+   }
+
+   #sidebar .sidebar-item:focus {
+    outline: none;
+   }
+
+   #sidebar .sidebar-item.active {
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
+   }
+
+   #sidebar .sidebar-item.active:hover {
+    background-color: #303f9f;
+    color: var(--button-text-color);
+   }
+
+   #content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 0;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+   }
+
+   #content-area.sidebar-open {
+    margin-left: 200px;
+   }
+
+   h1 {
+    color: var(--primary-color);
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.8px;
+    animation: fadeInDown 0.5s ease-out;
+   }
+
+   @keyframes fadeInDown {
+    from {
+     opacity: 0;
+     transform: translateY(-20px);
+    }
+    to {
+     opacity: 1;
+     transform: translateY(0);
+    }
+   }
+
+   #response-container {
+    width: 100%;
+    max-width: 700px;
+    flex-grow: 1;
+    margin-bottom: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 20px;
+    border: 1px solid var(--response-border);
+    border-radius: 8px;
+    background-color: var(--response-background);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+   }
+
+   #response-container::-webkit-scrollbar {
+    width: 10px;
+   }
+
+   #response-container::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-color);
+    border-radius: 5px;
+   }
+
+   #response-container::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-track-color);
+   }
+
+   .response-item {
+    background-color: transparent;
+    color: var(--text-color-primary);
+    padding: 15px 0;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+    text-align: left;
+    font-size: 1rem;
+    line-height: 1.6;
+    transition: color 0.3s ease, transform 0.2s ease-out;
+    position: relative;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.3s ease-out forwards;
+    border-bottom: 1px solid var(--response-border);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+   }
+
+   .response-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+   }
+
+   .response-item.user {
+    text-align: right;
+    flex-direction: row-reverse;
+   }
+
+   .response-item.user .icon {
+    color: var(--primary-color);
+    animation: pulseIcon 1.5s infinite alternate;
+   }
+
+   .response-item.ai .icon {
+    color: var(--accent-color);
+    animation: pulseIcon 1.5s infinite alternate;
+   }
+
+   @keyframes pulseIcon {
+    from {
+     transform: scale(1);
+     opacity: 0.8;
+    }
+    to {
+     transform: scale(1.1);
+     opacity: 1;
+    }
+   }
+
+   .response-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+   }
+
+   @keyframes fadeInUp {
+    from {
+     opacity: 0;
+     transform: translateY(10px);
+    }
+    to {
+     opacity: 1;
+     transform: translateY(0);
+    }
+   }
+
+   .loading-spinner-container {
+    display: flex;
+    justify-content: center;
+    padding: 25px;
+   }
+
+   .loading-spinner {
+    border: 3px solid rgba(63, 81, 181, 0.4);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1.1s linear infinite;
+   }
+
+   @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+   }
+
+   .error-message {
+    color: var(--secondary-color);
+    background-color: #ffebee;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+    text-align: center;
+    animation: shake 0.3s ease-in-out;
+   }
+
+   @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+   }
+
+   .input-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    margin-top: auto;
+    padding: 15px;
+    box-sizing: border-box;
+    background-color: var(--background-color);
+    border-top: 1px solid var(--response-border);
+   }
+
+   .input-container {
+    display: flex;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    margin-bottom: 10px;
+   }
+
+   input[type="text"] {
+    flex-grow: 1;
+    padding: 14px 18px;
+    font-size: 1rem;
+    border: none;
+    background-color: var(--input-background);
+    color: var(--text-color-primary);
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.1s ease-in-out;
+    outline: none;
+   }
+
+   input[type="text"]:focus {
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+    transform: scaleX(1.01);
+   }
+
+   button {
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 14px 18px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 0;
+    outline: none;
+   }
+
+   button:hover {
+    background-color: #303f9f;
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+   }
+
+   button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+   }
+
+   #stopButton {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease-in-out;
+    opacity: 0;
+    pointer-events: none;
+    outline: none;
+   }
+
+   #stopButton:hover {
+    background-color: #c2185b;
+    transform: scale(1.05);
+   }
+
+   .theme-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    color: var(--text-color-secondary);
+    transition: color 0.3s ease, transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+    outline: none;
+    animation: fadeIn 0.3s ease-out forwards 0.2s;
+    opacity: 0.8;
+   }
+
+   .theme-button:hover {
+    color: var(--primary-color);
+    transform: scale(1.1) rotate(15deg);
+    opacity: 1;
+   }
+
+   @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 0.8; }
+   }
+
+   .copy-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    transition: color 0.2s ease, transform 0.1s ease-in-out, opacity 0.2s ease-in-out;
+    outline: none;
+    opacity: 0.7;
+   }
+
+   .copy-button:hover {
+    color: var(--accent-color);
+    transform: scale(1.1);
+    opacity: 1;
+   }
+
+   .code-block {
+    background-color: var(--code-background);
+    color: var(--code-text-color);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    overflow-x: auto;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0,0, 0.05);
+   }
+
+   .code-block .copy-button {
+    top: 8px;
+    right: 8px;
+   }
+
+   /* Subtle animated background */
+   body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(to bottom right, rgba(63, 81, 181, 0.05), transparent);
+    z-index: -1;
+    animation: subtleBackground 5s infinite alternate;
+   }
+
+   @keyframes subtleBackground {
+    0% { opacity: 0.4; transform: scale(1); }
+    100% { opacity: 0.6; transform: scale(1.02); }
+   }
+
+   /* Scroll to bottom button */
+   #scroll-to-bottom {
+    position: absolute;
+    bottom: 70px;
+    right: 20px;
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.2s ease-in-out;
+    z-index: 5;
+   }
+
+   #scroll-to-bottom:hover {
+    transform: translateY(-3px);
+    opacity: 0.8;
+   }
+
+   #scroll-to-bottom.visible {
+    opacity: 0.7;
+   }
+
+   #scroll-to-bottom.visible:hover {
+    opacity: 1;
+   }
+  </style>
+ </head>
+ <body>
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+   <i class="fas fa-bars"></i>
+  </button>
+
+  <div id="sidebar">
+   <h2><i class="fas fa-brain icon"></i> AI Features</h2>
+   <a href="#" class="sidebar-item active">
+    <i class="fas fa-comments icon"></i> Chat
+   </a>
+   <a href="#" class="sidebar-item">
+    <i class="fas fa-code icon"></i> Code Generation
+   </a>
+   <a href="#" class="sidebar-item">
+    <i class="fas fa-file-alt icon"></i> Text Summarization
+   </a>
+   <a href="#" class="sidebar-item">
+    <i class="fas fa-language icon"></i> Translation
+   </a>
+   <a href="#" class="sidebar-item">
+    <i class="fas fa-question-circle icon"></i> FAQ
+   </a>
+   <a href="#" class="sidebar-item" onclick="loadPreviousChat()">
+    <i class="fas fa-history icon"></i> Load Previous Chat
+   </a>
+  </div>
+
+  <div id="content-area">
+   <button id="themeToggle" class="theme-button"><i class="fas fa-moon"></i></button>
+   <h1>AI Chat</h1>
+   <div id="response-container">
+   </div>
+   <button id="scroll-to-bottom" onclick="scrollToBottom()" class="hidden">
+    <i class="fas fa-arrow-down"></i>
+   </button>
+   <div class="input-area">
+    <div class="input-container">
+     <input id="prompt" type="text" placeholder="Ask me anything..." />
+     <button onclick="generate()"><i class="fas fa-paper-plane"></i> Send</button>
+    </div>
+    <button id="stopButton" onclick="stopGenerate()"><i class="fas fa-stop-circle"></i> Stop</button>
+   </div>
+  </div>
+
+  <script>
+   const responseContainer = document.getElementById("response-container");
+   const themeToggle = document.getElementById("themeToggle");
+   const body = document.body;
+   const promptInput = document.getElementById("prompt");
+   const stopButton = document.getElementById("stopButton");
+   const sidebar = document.getElementById("sidebar");
+   const contentArea = document.getElementById("content-area");
+   const sidebarToggle = document.querySelector('.sidebar-toggle');
+   const scrollToBottomButton = document.getElementById('scroll-to-bottom');
+
+   let isGenerating = false;
+   let controller = null;
+   const sessionHistoryKey = 'aiSessionHistory';
+   const savedTheme = localStorage.getItem('theme');
+   let sessionMessages = JSON.parse(sessionStorage.getItem(sessionHistoryKey) || '[]');
+
+   const toggleSidebar = () => {
+    sidebar.classList.toggle('open');
+    contentArea.classList.toggle('sidebar-open');
+    sidebarToggle.classList.toggle('open');
+   };
+
+   document.addEventListener('click', (event) => {
+    if (sidebar.classList.contains('open') && !sidebar.contains(event.target) && event.target !== sidebarToggle) {
+     toggleSidebar();
+    }
+   });
+
+   const loadChatHistory = () => {
+    responseContainer.innerHTML = '';
+    sessionMessages.forEach(msg => {
+     addMessageToContainer(msg.type, msg.content, false);
+    });
+    scrollToBottom(false);
+   };
+
+   const saveChatHistory = (type, content) => {
+    sessionMessages.push({ type, content });
+    sessionStorage.setItem(sessionHistoryKey, JSON.stringify(sessionMessages));
+    updateScrollToBottomVisibility();
+   };
+
+   const loadPreviousChat = () => {
+    loadChatHistory();
+    toggleSidebar();
+   };
+
+   if (savedTheme) {
+    body.classList.add(savedTheme);
+    updateThemeButtonText();
+   }
+
+   loadChatHistory();
+
+   themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark-theme');
+    localStorage.setItem('theme', body.classList.contains('dark-theme') ? 'dark-theme' : '');
+    updateThemeButtonText();
+   });
+
+   const updateThemeButtonText = () => {
+    themeToggle.innerHTML = body.classList.contains('dark-theme') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+   };
+
+   const generate = async () => {
+    if (isGenerating) return;
+    isGenerating = true;
+    stopButton.style.opacity = 1;
+    stopButton.style.pointerEvents = 'auto';
+    responseContainer.innerHTML = '<div class="loading-spinner-container"><div class="loading-spinner"></div></div>';
+    promptInput.disabled = true;
+
+    controller = new AbortController();
+    const signal = controller.signal;
+    const prompt = promptInput.value;
+    addMessageToContainer('user', prompt);
+    saveChatHistory('user', prompt);
+    promptInput.value = "";
+
+    try {
+     const res = await fetch("http://localhost:3001/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+      signal: signal
+     });
+     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+     const data = await res.json();
+     responseContainer.innerHTML = '';
+     addMessageToContainer('ai', data.response);
+     saveChatHistory('ai', data.response);
+    } catch (error) {
+     if (error.name !== 'AbortError') {
+      responseContainer.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+      console.error(error);
+     }
+    } finally {
+     isGenerating = false;
+     stopButton.style.opacity = 0;
+     stopButton.style.pointerEvents = 'none';
+     promptInput.disabled = false;
+     controller = null;
+     scrollToBottom();
+    }
+   };
+
+   const stopGenerate = () => {
+    if (isGenerating && controller) {
+     controller.abort();
+     isGenerating = false;
+     stopButton.style.opacity = 0;
+     stopButton.style.pointerEvents = 'none';
+     promptInput.disabled = false;
+    }
+   };
+
+   const addMessageToContainer = (type, message, animate = true) => {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('response-item', type);
+    messageDiv.innerHTML = `<i class="fas <span class="math-inline">\{type \=\=\= 'user' ? 'fa\-user\-circle' \: 'fa\-robot'\} icon"\></i\><div\></span>{formatResponse(message)}</div>`;
+    if (animate) {
+     messageDiv.style.opacity = 0;
+     messageDiv.style.transform = 'translateY(10px)';
+     responseContainer.prepend(messageDiv);
+     requestAnimationFrame(() => {
+      messageDiv.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+      messageDiv.style.opacity = 1;
+      messageDiv.style.transform = 'translateY(0)';
+     });
+    } else {
+     responseContainer.prepend(messageDiv);
+    }
+    if (type === 'ai') addCopyButtonsToCodeBlocks(messageDiv);
+    updateScrollToBottomVisibility();
+   };
+
+   const formatResponse = (responseText) => {
+    if (responseText?.startsWith('{') && responseText.endsWith('}')) {
+     try {
+      const jsonObject = JSON.parse(responseText);
+      if (jsonObject?.text) return jsonObject.text;
+      if (jsonObject?.content) return jsonObject.content;
+      return `<div class="code-block"><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button><pre><code>${JSON.stringify(jsonObject, null, 2)}</code></pre></div>`;
+     } catch (e) {}
+    }
+    const codeRegex = /```([\w-]+)?\n([\s\S]*?)```/g;
+    return responseText?.replace(codeRegex, (match, language, code) => {
+     const escapedCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+     return `<div class="code-block"><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button><pre><code class="<span class="math-inline">\{language \|\| ''\}"\></span>{escapedCode}</code></pre></div>`;
+    }) || '';
+   };
+
+   const addCopyButtonsToCodeBlocks = (container) => {
+    container.querySelectorAll('.code-block').forEach(block => {
+     if (!block.querySelector('.copy-button')) {
+      const copyButton = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+      copyButton.onclick = () => copyCode(copyButton);
+      block.prepend(copyButton);
+     }
+    });
+   };
+
+   const copyCode = (button) => {
+    const codeElement = button.parentNode.querySelector('pre code');
+    if (codeElement) {
+     navigator.clipboard.writeText(codeElement.textContent)
+      .then(() => {
+       button.innerHTML = '<i class="fas fa-check"></i>';
+       setTimeout(() => {
+        button.innerHTML = '<i class="fas fa-copy"></i>';
+       }, 1500);
+      })
+      .catch(err => {
+       console.error('Failed to copy code: ', err);
+       button.innerHTML = '<i class="fas fa-times"></i>';
+       setTimeout(() => {
+        button.innerHTML = '<i class="fas fa-copy"></i>';
+       }, 1500);
+      });
+    }
+   };
+
+   promptInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') generate();
+   });
+
+   const scrollToBottom = (smooth = true) => {
+    responseContainer.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'instant' });
+    updateScrollToBottomVisibility();
+   };
+
+   const updateScrollToBottomVisibility = () => {
+    scrollToBottomButton.classList.toggle('visible', responseContainer.scrollHeight > responseContainer.clientHeight && responseContainer.scrollTop > 20);
+   };
+
+   responseContainer.addEventListener('scroll', updateScrollToBottomVisibility);
+  </script>
+ </body>
+ </html>
